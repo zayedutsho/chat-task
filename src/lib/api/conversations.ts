@@ -4,6 +4,7 @@ import type {
   CreatedConversation,
   CreateConversationRequestDto,
   CreateConversationResponseDto,
+  CreateGroupRequestDto,
 } from "../../types/conversation";
 import { mapConversation, mapCreatedConversation } from "../mappers/conversation.mapper";
 import { ApiError } from "../../types/api";
@@ -41,4 +42,9 @@ export async function createConversation(
     input,
   );
   return mapCreatedConversation(data);
+}
+
+export async function createGroupConversation(input: CreateGroupRequestDto): Promise<void> {
+  // The success response is undocumented; the list endpoint supplies full conversations.
+  await apiClient.post<unknown>("/conversations/group", input);
 }

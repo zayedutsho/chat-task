@@ -42,3 +42,7 @@ export interface CreatedConversation {
   participantIds: string[];
   createdAt: string;
 }
+export interface CreateGroupRequestDto {
+  name: string;
+  participantIds: string[];
+}

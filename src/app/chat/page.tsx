@@ -7,6 +7,7 @@ import { getChatSocket } from "../../lib/socket";
 import { searchUsers } from "../../lib/api/users";
 import { createConversation, getConversations } from "../../lib/api/conversations";
 import type { Conversation } from "../../types/conversation";
+import CreateGroupPanel from "../../components/chat/CreateGroupPanel";
 import ChatPanel from "../../components/chat/ChatPanel";
 import ConversationList from "../../components/chat/ConversationList";
 import UserSearch from "../../components/chat/UserSearch";
@@ -31,6 +32,7 @@ export default function ChatPage() {
   const [error, setError] = useState("");
   const [requestVersion, setRequestVersion] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isGroupOpen, setIsGroupOpen] = useState(false);
   const latestConversationRequest = useRef(0);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -189,8 +191,34 @@ export default function ChatPage() {
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">
               Conversations
             </h1>
+            <button
+              type="button"
+              onClick={() => setIsGroupOpen(true)}
+              disabled={isGroupOpen || !currentUser || creatingUserId !== null}
+              aria-expanded={isGroupOpen}
+              aria-controls={isGroupOpen ? "create-group-panel" : undefined}
+              className="mt-4 rounded-lg border border-emerald-200 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:opacity-60"
+            >
+              New group
+            </button>
           </header>
 
+          {isGroupOpen && currentUser ? (
+            <CreateGroupPanel
+              currentUser={currentUser}
+              onCancel={() => setIsGroupOpen(false)}
+              onCreated={() => {
+                setIsGroupOpen(false);
+                setSearchQuery("");
+                setSearchResults([]);
+                setSearchError("");
+                setIsSearching(false);
+                setError("");
+                setIsLoading(true);
+                refreshConversations();
+              }}
+            />
+          ) : (
           <UserSearch
             searchQuery={searchQuery}
             searchResults={searchResults}
@@ -208,7 +236,8 @@ export default function ChatPage() {
             }}
             onStartConversation={startConversation}
           />
-          {!searchQuery.trim() && (
+          )}
+          {!isGroupOpen && !searchQuery.trim() && (
             <ConversationList
               conversations={conversations}
               selectedId={selectedId}
