@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentUser } from "../../lib/api/auth";
 import type { User } from "../../types/user";
+import { getChatSocket } from "../../lib/socket";
 import { searchUsers } from "../../lib/api/users";
 import { createConversation, getConversations } from "../../lib/api/conversations";
 import type { Conversation } from "../../types/conversation";
@@ -30,6 +31,7 @@ export default function ChatPage() {
   const [error, setError] = useState("");
   const [requestVersion, setRequestVersion] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const latestConversationRequest = useRef(0);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<User[]>([]);
@@ -68,20 +70,22 @@ export default function ChatPage() {
   useEffect(() => {
     let ignore = false;
 
+    const request = ++latestConversationRequest.current;
     getConversations()
       .then((data) => {
-        if (!ignore) {
+        if (!ignore && request === latestConversationRequest.current) {
           setCurrentUser(getCurrentUser());
           setConversations(data);
+          setError("");
         }
       })
       .catch(() => {
-        if (!ignore) {
+        if (!ignore && request === latestConversationRequest.current) {
           setError("We couldn't load your conversations. Please try again.");
         }
       })
       .finally(() => {
-        if (!ignore) setIsLoading(false);
+        if (!ignore && request === latestConversationRequest.current) setIsLoading(false);
       });
 
     // Ignore responses from an earlier request or an unmounted page.
@@ -89,6 +93,42 @@ export default function ChatPage() {
       ignore = true;
     };
   }, [requestVersion]);
+
+  const refreshConversations = useCallback(() => {
+    setRequestVersion((version) => version + 1);
+  }, []);
+
+  useEffect(() => {
+    const socket = getChatSocket();
+    if (!socket) return;
+
+    function onConnect() {
+      if (process.env.NODE_ENV === "development") console.info("Chat socket connected.");
+      refreshConversations();
+    }
+    function onConnectError() {
+      if (process.env.NODE_ENV === "development") console.warn("Chat socket connection failed.");
+    }
+    function onDisconnect() {
+      if (process.env.NODE_ENV === "development") console.info("Chat socket disconnected.");
+    }
+
+    socket.on("message:new", refreshConversations);
+    socket.on("conversation:updated", refreshConversations);
+    socket.on("connect", onConnect);
+    socket.on("connect_error", onConnectError);
+    socket.on("disconnect", onDisconnect);
+    socket.connect();
+
+    return () => {
+      socket.off("message:new", refreshConversations);
+      socket.off("conversation:updated", refreshConversations);
+      socket.off("connect", onConnect);
+      socket.off("connect_error", onConnectError);
+      socket.off("disconnect", onDisconnect);
+      socket.disconnect();
+    };
+  }, [refreshConversations]);
 
   function retry() {
     setError("");
@@ -112,8 +152,9 @@ export default function ChatPage() {
       setIsLoading(true);
 
       try {
+        const request = ++latestConversationRequest.current;
         const refreshed = await getConversations();
-        setConversations(refreshed);
+        if (request === latestConversationRequest.current) setConversations(refreshed);
         setCurrentUser(getCurrentUser());
         if (refreshed.some((conversation) => conversation.id === created.id)) {
           setSelectedId(created.id);
@@ -191,6 +232,7 @@ export default function ChatPage() {
               title={getConversationTitle(selectedConversation, currentUser)}
               conversation={selectedConversation}
               currentUser={currentUser}
+              onMessageSent={refreshConversations}
             />
           ) : (
             <div className="flex h-full min-h-48 items-center justify-center p-8">
