@@ -3,12 +3,13 @@ import type { User, UserDto } from "./user";
 export interface ConversationDto {
   _id: string;
   type: "direct" | "group";
-  lastMessage?: { text: string; sender: string; createdAt: string };
+  lastMessage?: { text?: string; sender?: string; createdAt?: string };
   updatedAt: string;
   name?: string;
   createdBy?: string;
   admins?: string[];
-  participants: UserDto[];
+  participant?: UserDto | string | null;
+  participants?: (UserDto | string | null)[];
 }
 
 export interface Conversation {

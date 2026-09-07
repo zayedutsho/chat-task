@@ -4,13 +4,43 @@ import type {
   CreatedConversation,
   CreateConversationResponseDto,
 } from "../../types/conversation";
+import type { UserDto } from "../../types/user";
 import { mapUser } from "./user.mapper";
 
 export function mapConversation(dto: ConversationDto): Conversation {
+  // Direct chats may return one participant; group chats use the array shape.
+  const participants = Array.isArray(dto.participants)
+    ? dto.participants
+    : dto.participant
+      ? [dto.participant]
+      : [];
+  const populatedParticipants = participants.filter(
+    (participant): participant is UserDto =>
+      typeof participant === "object" &&
+      participant !== null &&
+      typeof participant._id === "string" &&
+      typeof participant.name === "string" &&
+      typeof participant.phone === "string",
+  );
+
+  if (
+    process.env.NODE_ENV === "development" &&
+    (participants.length === 0 || populatedParticipants.length !== participants.length)
+  ) {
+    console.warn("Conversation participants are not fully populated.", {
+      id: dto._id,
+      participant: dto.participant,
+      participants: dto.participants,
+    });
+  }
+
   return {
     id: dto._id,
     type: dto.type,
-    lastMessage: dto.lastMessage
+    lastMessage:
+      typeof dto.lastMessage?.text === "string" &&
+      typeof dto.lastMessage.sender === "string" &&
+      typeof dto.lastMessage.createdAt === "string"
       ? {
           text: dto.lastMessage.text,
           senderId: dto.lastMessage.sender,
@@ -21,7 +51,7 @@ export function mapConversation(dto: ConversationDto): Conversation {
     name: dto.name,
     createdBy: dto.createdBy,
     admins: dto.admins ? [...dto.admins] : undefined,
-    participants: dto.participants.map(mapUser),
+    participants: populatedParticipants.map(mapUser),
   };
 }
 

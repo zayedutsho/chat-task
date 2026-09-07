@@ -6,11 +6,31 @@ import type {
   CreateConversationResponseDto,
 } from "../../types/conversation";
 import { mapConversation, mapCreatedConversation } from "../mappers/conversation.mapper";
-import { apiClient } from "./client";
+import { ApiError } from "../../types/api";
+import { apiClient, normalizeApiError } from "./client";
 
 export async function getConversations(): Promise<Conversation[]> {
-  const { data } = await apiClient.get<ConversationsResponseDto>("/conversations");
-  return data.data.map(mapConversation);
+  try {
+    const { data } = await apiClient.get<ConversationsResponseDto>("/conversations");
+    if (!Array.isArray(data?.data)) {
+      throw new ApiError(
+        "Unexpected conversations response: expected a data array.",
+        "INVALID_CONVERSATIONS_RESPONSE",
+      );
+    }
+    return data.data.map(mapConversation);
+  } catch (error) {
+    const normalized = normalizeApiError(error);
+    if (process.env.NODE_ENV === "development") {
+      // Log only error details, never Axios request headers containing the token.
+      console.error("Unable to load conversations.", {
+        message: normalized.message,
+        code: normalized.code,
+        status: normalized.status,
+      });
+    }
+    throw normalized;
+  }
 }
 
 export async function createConversation(
