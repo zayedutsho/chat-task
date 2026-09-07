@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import { login } from "../../lib/api/auth";
 
 export default function LoginPage() {
@@ -62,7 +62,10 @@ export default function LoginPage() {
         <p className="mb-2 text-xs font-semibold tracking-[0.18em] text-emerald-800 uppercase">
           A little closer
         </p>
-        <h1 id="login-heading" className="text-3xl font-semibold tracking-tight sm:text-[2rem]">
+        <h1
+          id="login-heading"
+          className="text-3xl font-semibold tracking-tight sm:text-[2rem]"
+        >
           Sign in to chat
         </h1>
         <p className="mt-3 max-w-xs text-sm leading-6 text-slate-500">
@@ -75,7 +78,10 @@ export default function LoginPage() {
           className="mt-8 space-y-6"
         >
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-slate-700"
+            >
               Name
             </label>
             <input
@@ -93,7 +99,10 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor="phone"
+              className="block text-sm font-medium text-slate-700"
+            >
               Phone
             </label>
             <input
@@ -111,7 +120,10 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-5 text-red-700">
+            <p
+              role="alert"
+              className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-5 text-red-700"
+            >
               {error}
             </p>
           )}
