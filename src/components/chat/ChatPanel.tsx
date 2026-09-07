@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getMessages } from "../../lib/api/messages";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { getMessages, sendMessage } from "../../lib/api/messages";
 import type { Conversation } from "../../types/conversation";
 import type { Message } from "../../types/message";
 import type { User } from "../../types/user";
@@ -21,6 +21,12 @@ export default function ChatPanel({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [requestVersion, setRequestVersion] = useState(0);
+  const [draft, setDraft] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState("");
+  const sendInFlight = useRef(false);
+  const messageAreaRef = useRef<HTMLDivElement>(null);
+  const scrollAfterSend = useRef(false);
 
   useEffect(() => {
     let ignore = false;
@@ -43,6 +49,46 @@ export default function ChatPanel({
     };
   }, [conversation.id, requestVersion]);
 
+  useEffect(() => {
+    if (scrollAfterSend.current && messageAreaRef.current) {
+      messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
+      scrollAfterSend.current = false;
+    }
+  }, [messages]);
+
+  async function handleSend(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text = draft.trim();
+    if (!text || sendInFlight.current || isLoading) return;
+
+    // The ref blocks duplicate submissions before React renders the disabled button.
+    sendInFlight.current = true;
+    setIsSending(true);
+    setSendError("");
+
+    try {
+      await sendMessage({ conversationId: conversation.id, text });
+      setDraft("");
+      setError("");
+      setIsLoading(true);
+
+      try {
+        const history = await getMessages(conversation.id);
+        scrollAfterSend.current = true;
+        setMessages(history.messages);
+      } catch {
+        setError("Your message was sent, but we couldn't refresh the history. Please retry.");
+      } finally {
+        setIsLoading(false);
+      }
+    } catch {
+      setSendError("We couldn't send your message. Please try again.");
+    } finally {
+      sendInFlight.current = false;
+      setIsSending(false);
+    }
+  }
+
   function retry() {
     setError("");
     setIsLoading(true);
@@ -55,10 +101,11 @@ export default function ChatPanel({
         <h2 className="text-lg font-semibold break-words">{title}</h2>
       </header>
       <div
+        ref={messageAreaRef}
         aria-label="Message history"
         aria-busy={isLoading}
         tabIndex={0}
-        className="h-[55dvh] overflow-y-auto p-4 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-emerald-700 sm:p-6 md:h-[calc(100dvh-9rem)]"
+        className="h-[55dvh] overflow-y-auto p-4 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-emerald-700 sm:p-6 md:h-[calc(100dvh-20rem)] md:min-h-48"
       >
         {isLoading ? (
           <p role="status" className="py-8 text-center text-sm text-slate-500">
@@ -72,6 +119,7 @@ export default function ChatPanel({
             <button
               type="button"
               onClick={retry}
+              disabled={isSending}
               className="mt-3 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
             >
               Retry
@@ -139,6 +187,50 @@ export default function ChatPanel({
           </ol>
         )}
       </div>
+      <form
+        onSubmit={handleSend}
+        aria-busy={isSending}
+        className="border-t border-slate-100 p-4 sm:px-6"
+      >
+        <label htmlFor="message-draft" className="sr-only">
+          Message
+        </label>
+        <textarea
+          id="message-draft"
+          rows={2}
+          value={draft}
+          disabled={isSending}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (
+              event.key === "Enter" &&
+              !event.shiftKey &&
+              !event.nativeEvent.isComposing
+            ) {
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }
+          }}
+          placeholder="Write a message..."
+          aria-describedby={sendError ? "send-error" : undefined}
+          className="block w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-base outline-none placeholder:text-slate-400 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 disabled:opacity-60"
+        />
+        {sendError && (
+          <p id="send-error" role="alert" className="mt-2 text-sm text-red-700">
+            {sendError}
+          </p>
+        )}
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-slate-500">Shift+Enter for a new line</p>
+          <button
+            type="submit"
+            disabled={isSending || isLoading || !draft.trim()}
+            className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSending ? "Sending..." : "Send"}
+          </button>
+        </div>
+      </form>
     </>
   );
 }
