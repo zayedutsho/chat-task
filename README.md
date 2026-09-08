@@ -4,9 +4,7 @@ A responsive realtime chat application built for a Senior Frontend Engineer take
 
 ## Live Demo
 
-- Landing: `<LANDING_URL>`
-- Chat entry: `<CHAT_URL>` � replace with the deployed `/login` URL.
-
+- Landing: `chat-task-eta.vercel.app`
 ## GitHub
 
 [Repository](https://github.com/zayedutsho/chat-task)
