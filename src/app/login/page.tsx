@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { login } from "../../lib/api/auth";
+import { tokenStorage } from "../../lib/api/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,6 +11,17 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    if (tokenStorage.get()) {
+      router.replace("/chat");
+      return;
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Read browser storage only after hydration.
+    setIsCheckingAuth(false);
+  }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,6 +45,14 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (isCheckingAuth) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-white text-sm text-slate-500">
+        <p role="status">Checking session...</p>
+      </main>
+    );
   }
 
   return (

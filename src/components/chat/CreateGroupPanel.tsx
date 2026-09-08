@@ -94,14 +94,25 @@ export default function CreateGroupPanel({
       onSubmit={handleSubmit}
       aria-labelledby="create-group-heading"
       aria-busy={isCreating}
-      className="border-b border-slate-100 px-5 py-4"
+      className="min-h-0 flex-1 overflow-y-auto border-b border-slate-100 bg-white px-4 py-4 md:border-b-0"
     >
       <fieldset disabled={isCreating} className="min-w-0 space-y-4">
-        <h2 id="create-group-heading" className="text-base font-semibold">
-          New group
-        </h2>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2
+            id="create-group-heading"
+            className="text-sm font-semibold tracking-tight text-slate-900"
+          >
+            New group
+          </h2>
+          <p className="font-mono text-[10px] tracking-[0.14em] text-emerald-800 uppercase">
+            {selectedUsers.length} selected
+          </p>
+        </div>
         <div>
-          <label htmlFor="group-name" className="block text-sm font-medium text-slate-700">
+          <label
+            htmlFor="group-name"
+            className="block text-xs font-medium text-slate-600"
+          >
             Group name
           </label>
           <input
@@ -110,11 +121,14 @@ export default function CreateGroupPanel({
             onChange={(event) => setName(event.target.value)}
             required
             placeholder="Project Team"
-            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-base outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 disabled:opacity-60"
+            className="mt-1.5 block h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-base outline-none transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-700 focus:bg-white focus:ring-4 focus:ring-emerald-700/10 disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
           />
         </div>
         <div>
-          <label htmlFor="group-member-search" className="block text-sm font-medium text-slate-700">
+          <label
+            htmlFor="group-member-search"
+            className="block text-xs font-medium text-slate-600"
+          >
             Find members
           </label>
           <input
@@ -129,7 +143,7 @@ export default function CreateGroupPanel({
               setIsSearching(Boolean(value.trim()));
             }}
             placeholder="Search by name or phone"
-            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-base outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 disabled:opacity-60"
+            className="mt-1.5 block h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-base outline-none transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-700 focus:bg-white focus:ring-4 focus:ring-emerald-700/10 disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
           />
         </div>
 
@@ -142,43 +156,62 @@ export default function CreateGroupPanel({
             ) : results.length === 0 ? (
               <p role="status" className="text-sm text-slate-500">No matching people found.</p>
             ) : (
-              <ul aria-label="Matching members" className="max-h-48 space-y-1 overflow-y-auto">
-                {results.map((user) => (
-                  <li key={user.id}>
-                    <label className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 hover:bg-emerald-50">
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.some((member) => member.id === user.id)}
-                        onChange={() => toggleMember(user)}
-                        className="size-4 shrink-0 accent-emerald-800"
-                      />
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">{user.name}</span>
-                        <span className="block truncate text-xs text-slate-500">{user.phone}</span>
-                      </span>
-                    </label>
-                  </li>
-                ))}
+              <ul aria-label="Matching members" className="max-h-52 space-y-0.5 overflow-y-auto">
+                {results.map((user) => {
+                  const isSelected = selectedUsers.some((member) => member.id === user.id);
+
+                  return (
+                    <li key={user.id}>
+                      <label
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-2.5 py-2 transition-colors ${
+                          isSelected
+                            ? "border-emerald-200 bg-emerald-50"
+                            : "border-transparent hover:bg-slate-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleMember(user)}
+                          className="size-4 shrink-0 accent-emerald-800"
+                        />
+                        <span className="min-w-0">
+                          <span
+                            className={`block truncate text-sm font-medium ${
+                              isSelected ? "text-emerald-950" : "text-slate-900"
+                            }`}
+                          >
+                            {user.name}
+                          </span>
+                          <span className="block truncate text-xs text-slate-500">
+                            {user.phone}
+                          </span>
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
         )}
 
         <div>
-          <p id="group-member-hint" className="text-sm text-slate-500">
-            Select at least 2 people. {selectedUsers.length} selected.
+          <p id="group-member-hint" className="text-xs text-slate-500">
+            Select at least 2 people.
           </p>
           {selectedUsers.length > 0 && (
-            <ul aria-label="Selected members" className="mt-2 flex flex-wrap gap-2">
+            <ul aria-label="Selected members" className="mt-2 flex flex-wrap gap-1.5">
               {selectedUsers.map((user) => (
                 <li key={user.id}>
                   <button
                     type="button"
                     onClick={() => toggleMember(user)}
                     aria-label={`Remove ${user.name}`}
-                    className="max-w-full rounded-full bg-emerald-50 px-3 py-1.5 text-sm text-emerald-900 hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                    className="flex max-w-full items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 py-1 pr-2 pl-2.5 text-xs font-medium text-emerald-900 transition-colors hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
                   >
-                    <span className="break-all">{user.name}</span> <span aria-hidden="true">&times;</span>
+                    <span className="truncate">{user.name}</span>
+                    <span aria-hidden="true" className="text-emerald-700">&times;</span>
                   </button>
                 </li>
               ))}
@@ -191,7 +224,7 @@ export default function CreateGroupPanel({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-emerald-700"
+            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
           >
             Cancel
           </button>
@@ -199,7 +232,7 @@ export default function CreateGroupPanel({
             type="submit"
             disabled={isCreating || !name.trim() || selectedUsers.length < 2}
             aria-describedby="group-member-hint"
-            className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 active:bg-emerald-950 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isCreating ? "Creating..." : "Create group"}
           </button>
